@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenTicket.Application\OpenTicket.Application.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure\OpenTicket.Infrastructure.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure.Database\OpenTicket.Infrastructure.Database.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure.Payment\OpenTicket.Infrastructure.Payment.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure.Identity\OpenTicket.Infrastructure.Identity.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure.MessageBroker\OpenTicket.Infrastructure.MessageBroker.csproj" />
+  </ItemGroup>
+
+</Project>
