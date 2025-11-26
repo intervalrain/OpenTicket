@@ -171,11 +171,14 @@ public interface ITicketService { }
 // Classes: PascalCase, no prefix
 public class TicketService : ITicketService { }
 
+// Domain Services: {AggregateRoot}Manager (no interface, lives in Domain layer)
+public class SeatManager { }  // Handles cross-entity logic for Seat aggregate
+
 // Async methods: Async suffix
 public Task<SeatLockResult> LockSeatAsync(SeatLockRequest request, CancellationToken ct = default);
 
 // Private fields: _camelCase
-private readonly ISeatLockService _seatLockService;
+private readonly SeatManager _seatManager;
 
 // Constants: PascalCase
 public const int DefaultLockTtlSeconds = 120;
@@ -363,6 +366,11 @@ public async Task<IActionResult> LockSeats(Guid sessionId, [FromBody] LockSeatsR
 
 ## Testing Conventions
 
+### Test Libraries
+- **xUnit**: Test framework
+- **NSubstitute**: Mocking library (preferred over Moq)
+- **Shouldly**: Fluent assertions
+
 ### Test Naming
 ```csharp
 // Pattern: MethodName_StateUnderTest_ExpectedBehavior
@@ -378,22 +386,65 @@ public async Task CreateOrder_WithExpiredLock_ThrowsDomainException()
 public void SetPrice_WithInvalidAmount_ThrowsArgumentException(decimal amount)
 ```
 
-### Test Structure (AAA Pattern)
+### Test Structure (AAA Pattern + Shouldly)
 ```csharp
 [Fact]
 public async Task LockSeat_WhenAvailable_ShouldSucceed()
 {
     // Arrange
-    var service = new SeatLockService(_mockEventBus.Object);
+    var repository = Substitute.For<ISeatRepository>();
+    var service = new SeatLockService(repository);
     var request = new SeatLockRequest { SessionId = _sessionId, SeatId = "A-001" };
 
     // Act
     var result = await service.LockSeatAsync(request);
 
     // Assert
-    Assert.True(result.Success);
-    Assert.NotNull(result.LockId);
+    result.IsError.ShouldBeFalse();
+    result.Value.ShouldNotBeNull();
 }
+```
+
+### Fluent Assertions with Shouldly
+```csharp
+// Value equality
+actual.ShouldBe(expected);
+
+// Boolean
+condition.ShouldBeTrue();
+condition.ShouldBeFalse();
+
+// Null checks
+obj.ShouldNotBeNull();
+obj.ShouldBeNull();
+
+// Collections
+collection.ShouldHaveSingleItem();
+collection.ShouldBeEmpty();
+collection.ShouldContain(item);
+
+// Type checks
+obj.ShouldBeOfType<SeatLockedEvent>();
+
+// ErrorOr assertions
+result.IsError.ShouldBeFalse();
+result.FirstError.Code.ShouldBe("Seat.NotAvailable");
+```
+
+### Mocking with NSubstitute
+```csharp
+// Create mock
+var repository = Substitute.For<ISeatRepository>();
+
+// Setup return value
+repository.FindAsync(Arg.Any<SeatId>(), Arg.Any<CancellationToken>())
+    .Returns(seat);
+
+// Verify call was made
+await repository.Received(1).UpdateAsync(seat, Arg.Any<CancellationToken>());
+
+// Verify call was NOT made
+await repository.DidNotReceive().DeleteAsync(Arg.Any<Seat>(), Arg.Any<CancellationToken>());
 ```
 
 ### Test Data Builders
