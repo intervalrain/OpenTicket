@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
-using OpenTicket.Ddd.Application;
+
 using OpenTicket.Ddd.Domain;
+using OpenTicket.Ddd.Infrastructure;
 
 namespace OpenTicket.Infrastructure.Database.InMemory;
 

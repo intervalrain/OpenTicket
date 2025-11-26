@@ -1,6 +1,6 @@
 using OpenTicket.Ddd.Domain;
 
-namespace OpenTicket.Ddd.Application;
+namespace OpenTicket.Ddd.Infrastructure;
 
 /// <summary>
 /// Base interface for repositories. Repositories provide access to aggregates.

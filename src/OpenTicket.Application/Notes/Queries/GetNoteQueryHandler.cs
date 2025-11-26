@@ -1,7 +1,7 @@
 using OpenTicket.Application.Contracts.Notes.Dtos;
 using OpenTicket.Application.Contracts.Notes.Queries;
-using OpenTicket.Ddd.Application;
 using OpenTicket.Ddd.Application.Cqrs;
+using OpenTicket.Ddd.Infrastructure;
 using OpenTicket.Domain.Notes.Entities;
 
 namespace OpenTicket.Application.Notes.Queries;

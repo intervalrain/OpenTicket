@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using OpenTicket.Ddd.Application;
+
 using OpenTicket.Ddd.Infrastructure;
 using OpenTicket.Infrastructure.Database.InMemory;
 

@@ -1,6 +1,9 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTicket.Ddd.Application.Cqrs.Audit;
+using OpenTicket.Ddd.Application.Cqrs.Behaviors;
 using OpenTicket.Ddd.Application.Cqrs.Internal;
+using OpenTicket.Ddd.Application.Cqrs.Validation;
 
 namespace OpenTicket.Ddd.Application.Cqrs;
 
@@ -95,5 +98,79 @@ public static class CqrsServiceCollectionExtensions
     private static bool IsHandlerInterface(Type type)
     {
         return type == typeof(ICommandHandler<,>) || type == typeof(IQueryHandler<,>);
+    }
+
+    /// <summary>
+    /// Registers all validators from the specified assembly.
+    /// </summary>
+    public static IServiceCollection AddValidatorsFromAssembly(this IServiceCollection services, Assembly assembly)
+    {
+        var validatorTypes = assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false })
+            .SelectMany(t => t.GetInterfaces()
+                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IValidator<>))
+                .Select(i => new { Implementation = t, Interface = i }));
+
+        foreach (var validator in validatorTypes)
+        {
+            services.AddScoped(validator.Interface, validator.Implementation);
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the logging pipeline behavior.
+    /// </summary>
+    public static IServiceCollection AddLoggingBehavior(this IServiceCollection services)
+    {
+        services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the validation pipeline behavior.
+    /// Requires validators to be registered via AddValidatorsFromAssembly.
+    /// </summary>
+    public static IServiceCollection AddValidationBehavior(this IServiceCollection services)
+    {
+        services.AddPipelineBehavior(typeof(ValidationBehavior<,>));
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the transaction pipeline behavior.
+    /// Requires IUnitOfWork to be registered.
+    /// </summary>
+    public static IServiceCollection AddTransactionBehavior(this IServiceCollection services)
+    {
+        services.AddPipelineBehavior(typeof(TransactionBehavior<,>));
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the audit pipeline behavior with trace ID support.
+    /// </summary>
+    public static IServiceCollection AddAuditBehavior(this IServiceCollection services)
+    {
+        services.AddScoped<IAuditContext, AuditContext>();
+        services.AddPipelineBehavior(typeof(AuditBehavior<,>));
+        return services;
+    }
+
+    /// <summary>
+    /// Adds all standard pipeline behaviors in the recommended order:
+    /// 1. Audit (trace ID setup)
+    /// 2. Logging
+    /// 3. Validation
+    /// 4. Transaction
+    /// </summary>
+    public static IServiceCollection AddStandardBehaviors(this IServiceCollection services)
+    {
+        services.AddAuditBehavior();
+        services.AddLoggingBehavior();
+        services.AddValidationBehavior();
+        services.AddTransactionBehavior();
+        return services;
     }
 }
