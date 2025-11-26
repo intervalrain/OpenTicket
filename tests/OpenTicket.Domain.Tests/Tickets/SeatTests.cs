@@ -298,4 +298,62 @@ public class SeatTests
     }
 
     #endregion
+
+    #region Sell with Expired Lock Tests
+
+    [Fact]
+    public void Sell_WhenLockExpired_ShouldReturnError()
+    {
+        // Arrange
+        var seat = CreateSeat();
+        var orderId = OrderId.New();
+        seat.Lock(_userId, TimeSpan.FromMilliseconds(1));
+        Thread.Sleep(10);
+
+        // Act
+        var result = seat.Sell(_userId, orderId);
+
+        // Assert
+        result.IsError.ShouldBeTrue();
+        result.FirstError.Code.ShouldBe("Seat.LockExpired");
+    }
+
+    [Fact]
+    public void Sell_WhenLockExpired_ShouldAutoRelease()
+    {
+        // Arrange
+        var seat = CreateSeat();
+        var orderId = OrderId.New();
+        seat.Lock(_userId, TimeSpan.FromMilliseconds(1));
+        Thread.Sleep(10);
+        seat.ClearDomainEvents();
+
+        // Act
+        seat.Sell(_userId, orderId);
+
+        // Assert
+        seat.Status.ShouldBe(SeatStatus.Available);
+        seat.LockedBy.ShouldBeNull();
+        var domainEvent = seat.DomainEvents.ShouldHaveSingleItem();
+        domainEvent.ShouldBeOfType<SeatReleasedEvent>();
+    }
+
+    [Fact]
+    public void Sell_WhenLockNotExpired_ShouldSucceed()
+    {
+        // Arrange
+        var seat = CreateSeat();
+        var orderId = OrderId.New();
+        seat.Lock(_userId, TimeSpan.FromMinutes(2));
+        seat.ClearDomainEvents();
+
+        // Act
+        var result = seat.Sell(_userId, orderId);
+
+        // Assert
+        result.IsError.ShouldBeFalse();
+        seat.Status.ShouldBe(SeatStatus.Sold);
+    }
+
+    #endregion
 }

@@ -54,17 +54,21 @@ public class Seat : AggregateRoot<SeatId>
         if (Status != SeatStatus.Locked)
             return;
 
-        var wasLocked = Status == SeatStatus.Locked;
         LockedBy = null;
         LockExpiresAt = null;
         Status = SeatStatus.Available;
 
-        if (wasLocked)
-            AddDomainEvent(new SeatReleasedEvent(SessionId, AreaId, Number));
+        AddDomainEvent(new SeatReleasedEvent(SessionId, AreaId, Number));
     }
 
     public ErrorOr<Success> Sell(UserId buyerId, OrderId orderId)
     {
+        if (IsLockExpired())
+        {
+            Release();
+            return Error.Conflict("Seat.LockExpired", "Seat lock has expired");
+        }
+
         if (Status != SeatStatus.Locked)
             return Error.Conflict("Seat.NotLocked", "Seat must be locked before selling");
 

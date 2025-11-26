@@ -171,11 +171,14 @@ public interface ITicketService { }
 // Classes: PascalCase, no prefix
 public class TicketService : ITicketService { }
 
+// Domain Services: {AggregateRoot}Manager (no interface, lives in Domain layer)
+public class SeatManager { }  // Handles cross-entity logic for Seat aggregate
+
 // Async methods: Async suffix
 public Task<SeatLockResult> LockSeatAsync(SeatLockRequest request, CancellationToken ct = default);
 
 // Private fields: _camelCase
-private readonly ISeatLockService _seatLockService;
+private readonly SeatManager _seatManager;
 
 // Constants: PascalCase
 public const int DefaultLockTtlSeconds = 120;
