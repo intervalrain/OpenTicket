@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTicket.Application.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTicket.Infrastructure.Tests", "tests\OpenTicket.Infrastructure.Tests\OpenTicket.Infrastructure.Tests.csproj", "{80D243C1-5FCE-47B1-B264-E8DE131B6144}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTicket.Ddd.Tests", "tests\OpenTicket.Ddd.Tests\OpenTicket.Ddd.Tests.csproj", "{23F347C7-9283-416E-BF39-BD21E7AEBD05}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -100,6 +102,10 @@ Global
 		{80D243C1-5FCE-47B1-B264-E8DE131B6144}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{80D243C1-5FCE-47B1-B264-E8DE131B6144}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{80D243C1-5FCE-47B1-B264-E8DE131B6144}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23F347C7-9283-416E-BF39-BD21E7AEBD05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23F347C7-9283-416E-BF39-BD21E7AEBD05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23F347C7-9283-416E-BF39-BD21E7AEBD05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23F347C7-9283-416E-BF39-BD21E7AEBD05}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{27514652-C4E2-4415-899E-DF2610DDA123} = {68632520-F5A2-4208-84A1-0EAEB5D5D051}
@@ -116,5 +122,6 @@ Global
 		{62CD6BDF-3A32-467E-B2C7-891391F725FD} = {6A7B2C7C-33D7-445D-BCBD-8C1057CD0F72}
 		{1C5F6F37-97E1-486A-95C7-7ABB1B5BBE4A} = {6A7B2C7C-33D7-445D-BCBD-8C1057CD0F72}
 		{80D243C1-5FCE-47B1-B264-E8DE131B6144} = {6A7B2C7C-33D7-445D-BCBD-8C1057CD0F72}
+		{23F347C7-9283-416E-BF39-BD21E7AEBD05} = {6A7B2C7C-33D7-445D-BCBD-8C1057CD0F72}
 	EndGlobalSection
 EndGlobal
