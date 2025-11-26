@@ -1,8 +1,20 @@
-@baseUrl = https://localhost:5001
+# @baseUrl = https://localhost:7118
+@baseUrl = http://localhost:5144
+
+# Variable to store created note ID (copy from Create response)
+@noteId = 00000000-0000-0000-0000-000000000001
+
+### ==================== GET ====================
 
 ### Get all notes
 GET {{baseUrl}}/api/note
 Accept: application/json
+
+### Get a note by ID
+GET {{baseUrl}}/api/note/{{noteId}}
+Accept: application/json
+
+### ==================== POST ====================
 
 ### Create a note
 POST {{baseUrl}}/api/note
@@ -13,18 +25,68 @@ Content-Type: application/json
   "body": "This is the content of my first note."
 }
 
-### Get a note by ID (replace with actual ID)
-GET {{baseUrl}}/api/note/00000000-0000-0000-0000-000000000001
-Accept: application/json
+### Create a note - validation error (empty title)
+POST {{baseUrl}}/api/note
+Content-Type: application/json
 
-### Update a note (replace with actual ID)
-PUT {{baseUrl}}/api/note/00000000-0000-0000-0000-000000000001
+{
+  "title": "",
+  "body": "This should fail validation."
+}
+
+### ==================== PUT ====================
+
+### Update a note (full replacement)
+PUT {{baseUrl}}/api/note/{{noteId}}
 Content-Type: application/json
 
 {
   "title": "Updated Note Title",
-  "body": "This is the updated content."
+  "body": "This is the completely updated content."
 }
 
-### Delete a note (replace with actual ID)
-DELETE {{baseUrl}}/api/note/00000000-0000-0000-0000-000000000001
+### ==================== PATCH ====================
+
+### Patch a note - update title only
+PATCH {{baseUrl}}/api/note/{{noteId}}
+Content-Type: application/json
+
+{
+  "title": "Patched Title Only"
+}
+
+### Patch a note - update body only
+PATCH {{baseUrl}}/api/note/{{noteId}}
+Content-Type: application/json
+
+{
+  "body": "Patched body only, title remains unchanged."
+}
+
+### Patch a note - update both
+PATCH {{baseUrl}}/api/note/{{noteId}}
+Content-Type: application/json
+
+{
+  "title": "Patched Title",
+  "body": "Patched body content."
+}
+
+### ==================== DELETE ====================
+
+### Delete a note
+DELETE {{baseUrl}}/api/note/{{noteId}}
+
+### ==================== API Documentation ====================
+
+### Scalar UI
+GET {{baseUrl}}/scalar/v1
+
+### Swagger UI
+GET {{baseUrl}}/swagger
+
+### ReDoc UI
+GET {{baseUrl}}/redoc
+
+### OpenAPI JSON
+GET {{baseUrl}}/openapi/v1.json

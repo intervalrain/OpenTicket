@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTicket.Application.Tickets.Settings;
 using OpenTicket.Ddd.Application.Cqrs;
-using OpenTicket.Ddd.Application.Cqrs.Behaviors;
 
 namespace OpenTicket.Application;
 
@@ -13,11 +12,16 @@ public static class OpenTicketApplicationModule
     {
         services.Configure<TicketSettings>(configuration.GetSection(TicketSettings.SectionName));
 
-        // Register CQRS dispatcher and handlers
-        services.AddCqrs(Assembly.GetExecutingAssembly());
+        var assembly = Assembly.GetExecutingAssembly();
 
-        // Register pipeline behaviors
-        services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
+        // Register CQRS dispatcher and handlers
+        services.AddCqrs(assembly);
+
+        // Register validators
+        services.AddValidatorsFromAssembly(assembly);
+
+        // Register standard pipeline behaviors (Audit -> Logging -> Validation -> Transaction)
+        services.AddStandardBehaviors();
 
         return services;
     }

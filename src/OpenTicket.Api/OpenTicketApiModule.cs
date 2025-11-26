@@ -1,5 +1,6 @@
 using OpenTicket.Application;
 using OpenTicket.Infrastructure.Database;
+using Scalar.AspNetCore;
 
 namespace OpenTicket.Api;
 
@@ -32,6 +33,50 @@ public static class OpenTicketApiModule
 
         app.UseHttpsRedirection();
         app.MapControllers();
+
+        return app;
+    }
+
+    /// <summary>
+    /// Enables Scalar API documentation UI at /scalar/v1.
+    /// A modern alternative to Swagger UI, compatible with .NET 9 OpenAPI.
+    /// </summary>
+    public static WebApplication UseScalarUI(this WebApplication app)
+    {
+        app.MapScalarApiReference(options => options
+            .WithTitle("OpenTicket API")
+            .WithTheme(ScalarTheme.DeepSpace)
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient));
+
+        return app;
+    }
+
+    /// <summary>
+    /// Enables Swagger UI at /swagger.
+    /// Classic API documentation interface using NSwag.
+    /// </summary>
+    public static WebApplication UseSwaggerUI(this WebApplication app)
+    {
+        app.UseSwaggerUi(options =>
+        {
+            options.DocumentPath = "/openapi/v1.json";
+            options.Path = "/swagger";
+        });
+
+        return app;
+    }
+
+    /// <summary>
+    /// Enables ReDoc UI at /redoc.
+    /// A clean, responsive API documentation interface.
+    /// </summary>
+    public static WebApplication UseReDocUI(this WebApplication app)
+    {
+        app.UseReDoc(options =>
+        {
+            options.DocumentPath = "/openapi/v1.json";
+            options.Path = "/redoc";
+        });
 
         return app;
     }
