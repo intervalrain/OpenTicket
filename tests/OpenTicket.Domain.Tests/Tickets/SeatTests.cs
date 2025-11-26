@@ -220,4 +220,82 @@ public class SeatTests
         // Act & Assert
         seat.IsLockExpired().ShouldBeFalse();
     }
+
+    #region Expired Lock Auto-Release Tests
+
+    [Fact]
+    public void Lock_WhenPreviousLockExpired_ShouldAutoReleaseAndSucceed()
+    {
+        // Arrange
+        var seat = CreateSeat();
+        var firstUser = UserId.New();
+        var secondUser = UserId.New();
+        seat.Lock(firstUser, TimeSpan.FromMilliseconds(1));
+        Thread.Sleep(10);
+        seat.ClearDomainEvents();
+
+        // Act
+        var result = seat.Lock(secondUser, TimeSpan.FromMinutes(2));
+
+        // Assert
+        result.IsError.ShouldBeFalse();
+        seat.Status.ShouldBe(SeatStatus.Locked);
+        seat.LockedBy.ShouldBe(secondUser);
+    }
+
+    [Fact]
+    public void Lock_WhenPreviousLockExpired_ShouldRaiseBothReleasedAndLockedEvents()
+    {
+        // Arrange
+        var seat = CreateSeat();
+        var firstUser = UserId.New();
+        var secondUser = UserId.New();
+        seat.Lock(firstUser, TimeSpan.FromMilliseconds(1));
+        Thread.Sleep(10);
+        seat.ClearDomainEvents();
+
+        // Act
+        seat.Lock(secondUser, TimeSpan.FromMinutes(2));
+
+        // Assert
+        seat.DomainEvents.Count.ShouldBe(2);
+        seat.DomainEvents[0].ShouldBeOfType<SeatReleasedEvent>();
+        seat.DomainEvents[1].ShouldBeOfType<SeatLockedEvent>();
+    }
+
+    [Fact]
+    public void Lock_WhenPreviousLockNotExpired_ShouldReturnError()
+    {
+        // Arrange
+        var seat = CreateSeat();
+        var firstUser = UserId.New();
+        var secondUser = UserId.New();
+        seat.Lock(firstUser, TimeSpan.FromMinutes(2));
+
+        // Act
+        var result = seat.Lock(secondUser, TimeSpan.FromMinutes(2));
+
+        // Assert
+        result.IsError.ShouldBeTrue();
+        result.FirstError.Code.ShouldBe("Seat.NotAvailable");
+        seat.LockedBy.ShouldBe(firstUser);
+    }
+
+    [Fact]
+    public void Lock_WhenSameUserRelockAfterExpired_ShouldSucceed()
+    {
+        // Arrange
+        var seat = CreateSeat();
+        seat.Lock(_userId, TimeSpan.FromMilliseconds(1));
+        Thread.Sleep(10);
+
+        // Act
+        var result = seat.Lock(_userId, TimeSpan.FromMinutes(2));
+
+        // Assert
+        result.IsError.ShouldBeFalse();
+        seat.LockedBy.ShouldBe(_userId);
+    }
+
+    #endregion
 }

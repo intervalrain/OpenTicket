@@ -8,9 +8,9 @@ public readonly record struct SeatId(
     AreaId AreaId,
     string Number) : IStronglyTypedId<string>
 {
-    public string Value => ToString();
+    public string Value => $"{SessionId.Value}:{AreaId.Value}:{Number}";
 
-    public override string ToString() => $"{SessionId.Value}:{AreaId.Value}:{Number}";
+    public override string ToString() => $"{SessionId.ShortId()}:{AreaId.ShortId()}:{Number}";
 
     public static SeatId From(SessionId sessionId, AreaId areaId, string number)
         => new(sessionId, areaId, number);

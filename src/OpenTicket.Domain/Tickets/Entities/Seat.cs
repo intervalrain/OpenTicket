@@ -34,6 +34,9 @@ public class Seat : AggregateRoot<SeatId>
 
     public ErrorOr<Success> Lock(UserId userId, TimeSpan ttl)
     {
+        if (IsLockExpired())
+            Release();
+
         if (Status != SeatStatus.Available)
             return Error.Conflict("Seat.NotAvailable", "Seat is not available for locking");
 
@@ -84,5 +87,10 @@ public class Seat : AggregateRoot<SeatId>
             return false;
 
         return DateTime.UtcNow > LockExpiresAt.Value;
+    }
+
+    public override string ToString()
+    {
+        return Id.ToString();
     }
 }
