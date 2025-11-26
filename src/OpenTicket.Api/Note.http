@@ -1,0 +1,30 @@
+@baseUrl = https://localhost:5001
+
+### Get all notes
+GET {{baseUrl}}/api/note
+Accept: application/json
+
+### Create a note
+POST {{baseUrl}}/api/note
+Content-Type: application/json
+
+{
+  "title": "My First Note",
+  "body": "This is the content of my first note."
+}
+
+### Get a note by ID (replace with actual ID)
+GET {{baseUrl}}/api/note/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+### Update a note (replace with actual ID)
+PUT {{baseUrl}}/api/note/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+
+{
+  "title": "Updated Note Title",
+  "body": "This is the updated content."
+}
+
+### Delete a note (replace with actual ID)
+DELETE {{baseUrl}}/api/note/00000000-0000-0000-0000-000000000001

@@ -12,7 +12,7 @@ public interface IRepository<TAggregate, in TId>
     where TId : notnull
 {
     /// <summary>
-    /// Gets an aggregate by its identifier. Returns error if not found.
+    /// Gets an aggregate by its identifier. Throws if not found.
     /// </summary>
     Task<TAggregate> GetAsync(TId id, CancellationToken ct = default);
 
@@ -20,6 +20,11 @@ public interface IRepository<TAggregate, in TId>
     /// Finds an aggregate by its identifier, returns null if not found.
     /// </summary>
     Task<TAggregate?> FindAsync(TId id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Lists all aggregates. Use sparingly, prefer specific query repositories for complex queries.
+    /// </summary>
+    Task<IReadOnlyList<TAggregate>> ListAllAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Inserts a new aggregate.

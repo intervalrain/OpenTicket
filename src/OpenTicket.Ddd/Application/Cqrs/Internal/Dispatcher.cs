@@ -136,7 +136,7 @@ public sealed class Dispatcher : IDispatcher
 
             var behavior = behaviors[index++];
             var method = behavior.GetType().GetMethod("HandleAsync")!;
-            var task = (Task<TResult>)method.Invoke(behavior, new object[] { request, (Func<Task<TResult>>)Next, ct })!;
+            var task = (Task<TResult>)method.Invoke(behavior, [request, (Func<Task<TResult>>)Next, ct])!;
             return await task;
         }
 

@@ -1,7 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OpenTicket.Application.Contracts\OpenTicket.Application.Contracts.csproj" />
+    <ProjectReference Include="..\OpenTicket.Domain\OpenTicket.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
