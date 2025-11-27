@@ -7,6 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OpenTicket.Ddd\OpenTicket.Ddd.csproj" />
     <ProjectReference Include="..\OpenTicket.Domain\OpenTicket.Domain.csproj" />
     <ProjectReference Include="..\OpenTicket.Application.Contracts\OpenTicket.Application.Contracts.csproj" />
   </ItemGroup>

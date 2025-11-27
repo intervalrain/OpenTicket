@@ -1,4 +1,4 @@
-using OpenTicket.Ddd.Application;
+using OpenTicket.Ddd.Infrastructure;
 using OpenTicket.Domain.Shared.Identities;
 using OpenTicket.Domain.Tickets.Entities;
 using OpenTicket.Domain.Tickets.ValueObjects;

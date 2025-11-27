@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.1" />
+    <PackageReference Include="NSwag.AspNetCore" Version="14.6.3" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.11.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,6 +19,7 @@
     <ProjectReference Include="..\OpenTicket.Infrastructure.Payment\OpenTicket.Infrastructure.Payment.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure.Identity\OpenTicket.Infrastructure.Identity.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure.MessageBroker\OpenTicket.Infrastructure.MessageBroker.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure.Notification\OpenTicket.Infrastructure.Notification.csproj" />
   </ItemGroup>
 
 </Project>
