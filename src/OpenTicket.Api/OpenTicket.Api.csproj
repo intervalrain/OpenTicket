@@ -19,6 +19,7 @@
     <ProjectReference Include="..\OpenTicket.Infrastructure.Payment\OpenTicket.Infrastructure.Payment.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure.Identity\OpenTicket.Infrastructure.Identity.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure.MessageBroker\OpenTicket.Infrastructure.MessageBroker.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure.Notification\OpenTicket.Infrastructure.Notification.csproj" />
   </ItemGroup>
 
 </Project>

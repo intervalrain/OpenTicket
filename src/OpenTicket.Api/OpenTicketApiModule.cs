@@ -1,5 +1,7 @@
 using OpenTicket.Application;
 using OpenTicket.Infrastructure.Database;
+using OpenTicket.Infrastructure.Identity;
+using OpenTicket.Infrastructure.Notification;
 using Scalar.AspNetCore;
 
 namespace OpenTicket.Api;
@@ -19,6 +21,12 @@ public static class OpenTicketApiModule
 
         // Register Persistence (InMemory for MVP)
         services.AddPersistence(DatabaseOption.InMemory);
+
+        // Register Identity (Mock for MVP)
+        services.AddMockIdentity(configuration);
+
+        // Register Notification (Console for MVP, use AddNotification for SMTP)
+        services.AddNotificationConsole(configuration);
 
         return services;
     }

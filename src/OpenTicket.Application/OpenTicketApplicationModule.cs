@@ -23,6 +23,9 @@ public static class OpenTicketApplicationModule
         // Register standard pipeline behaviors (Audit -> Logging -> Validation -> Transaction)
         services.AddStandardBehaviors();
 
+        // Register integration events infrastructure
+        services.AddIntegrationEvents();
+
         return services;
     }
 }
