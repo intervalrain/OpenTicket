@@ -5,9 +5,30 @@ namespace OpenTicket.Infrastructure.MessageBroker.Abstractions;
 /// </summary>
 public enum MessageBrokerOption
 {
+    /// <summary>
+    /// In-memory message broker for MVP/testing mode.
+    /// Events are dispatched directly without going through a real broker.
+    /// </summary>
+    InMemory,
+
+    /// <summary>
+    /// Redis Streams message broker.
+    /// </summary>
     Redis,
+
+    /// <summary>
+    /// NATS JetStream message broker.
+    /// </summary>
     Nats,
+
+    /// <summary>
+    /// RabbitMQ message broker (not yet implemented).
+    /// </summary>
     RabbitMq,
+
+    /// <summary>
+    /// Apache Kafka message broker (not yet implemented).
+    /// </summary>
     Kafka
 }
 
