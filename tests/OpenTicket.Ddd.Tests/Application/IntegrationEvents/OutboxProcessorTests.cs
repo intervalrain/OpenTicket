@@ -52,17 +52,12 @@ public class OutboxProcessorTests
 
     private async Task AddOutboxMessage(string eventType = "TestEvent", string aggregateId = "test")
     {
-        var message = new OutboxMessage
-        {
-            Id = Guid.NewGuid(),
-            EventId = Guid.NewGuid(),
-            EventType = eventType,
-            AggregateId = aggregateId,
-            Payload = $"{{\"data\":\"{aggregateId}\"}}",
-            CreatedAt = DateTime.UtcNow,
-            Status = OutboxMessageStatus.Pending
-        };
-        await _outboxRepository.AddAsync(message);
+        var message = OutboxMessage.Create(
+            Guid.NewGuid(),
+            eventType,
+            aggregateId,
+            $"{{\"data\":\"{aggregateId}\"}}");
+        await _outboxRepository.InsertAsync(message);
     }
 
     [Fact]
@@ -188,18 +183,13 @@ public class OutboxProcessorTests
     public async Task ProcessAsync_ShouldPreserveMessageMetadata()
     {
         // Arrange
-        var message = new OutboxMessage
-        {
-            Id = Guid.NewGuid(),
-            EventId = Guid.NewGuid(),
-            EventType = "OrderCreated",
-            AggregateId = "order-123",
-            Payload = "{\"orderId\":\"order-123\"}",
-            CorrelationId = "corr-456",
-            CreatedAt = DateTime.UtcNow,
-            Status = OutboxMessageStatus.Pending
-        };
-        await _outboxRepository.AddAsync(message);
+        var message = OutboxMessage.Create(
+            Guid.NewGuid(),
+            "OrderCreated",
+            "order-123",
+            "{\"orderId\":\"order-123\"}",
+            "corr-456");
+        await _outboxRepository.InsertAsync(message);
 
         var processor = CreateProcessor();
 

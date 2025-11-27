@@ -14,26 +14,37 @@ public class OutboxRepositoryTests
 
     private static OutboxMessage CreateMessage(string eventType = "TestEvent")
     {
-        return new OutboxMessage
-        {
-            Id = Guid.NewGuid(),
-            EventId = Guid.NewGuid(),
-            EventType = eventType,
-            AggregateId = "aggregate-123",
-            Payload = "{}",
-            CreatedAt = DateTime.UtcNow,
-            Status = OutboxMessageStatus.Pending
-        };
+        return OutboxMessage.Create(
+            Guid.NewGuid(),
+            eventType,
+            "aggregate-123",
+            "{}");
+    }
+
+    private static OutboxMessage CreateMessageWithTime(DateTime createdAt)
+    {
+        var message = OutboxMessage.Create(
+            Guid.NewGuid(),
+            "TestEvent",
+            "aggregate-123",
+            "{}");
+
+        // Use reflection to set CreatedAt for testing ordering
+        typeof(OutboxMessage)
+            .GetProperty(nameof(OutboxMessage.CreatedAt))!
+            .SetValue(message, createdAt);
+
+        return message;
     }
 
     [Fact]
-    public async Task AddAsync_ShouldAddMessage()
+    public async Task InsertAsync_ShouldAddMessage()
     {
         // Arrange
         var message = CreateMessage();
 
         // Act
-        await _repository.AddAsync(message);
+        await _repository.InsertAsync(message);
         var pending = await _repository.GetPendingAsync(10);
 
         // Assert
@@ -41,13 +52,16 @@ public class OutboxRepositoryTests
     }
 
     [Fact]
-    public async Task AddRangeAsync_ShouldAddMultipleMessages()
+    public async Task InsertAsync_ShouldAddMultipleMessages()
     {
         // Arrange
         var messages = new[] { CreateMessage(), CreateMessage(), CreateMessage() };
 
         // Act
-        await _repository.AddRangeAsync(messages);
+        foreach (var message in messages)
+        {
+            await _repository.InsertAsync(message);
+        }
         var pending = await _repository.GetPendingAsync(10);
 
         // Assert
@@ -59,7 +73,10 @@ public class OutboxRepositoryTests
     {
         // Arrange
         var messages = Enumerable.Range(0, 10).Select(_ => CreateMessage()).ToList();
-        await _repository.AddRangeAsync(messages);
+        foreach (var message in messages)
+        {
+            await _repository.InsertAsync(message);
+        }
 
         // Act
         var pending = await _repository.GetPendingAsync(5);
@@ -73,7 +90,7 @@ public class OutboxRepositoryTests
     {
         // Arrange
         var message = CreateMessage();
-        await _repository.AddAsync(message);
+        await _repository.InsertAsync(message);
 
         // Act
         var pending = await _repository.GetPendingAsync(10);
@@ -87,21 +104,11 @@ public class OutboxRepositoryTests
     public async Task GetPendingAsync_ShouldOrderByCreatedAt()
     {
         // Arrange
-        var oldMessage = new OutboxMessage
-        {
-            Id = Guid.NewGuid(),
-            EventId = Guid.NewGuid(),
-            EventType = "TestEvent",
-            AggregateId = "aggregate-old",
-            Payload = "{}",
-            CreatedAt = DateTime.UtcNow.AddMinutes(-5),
-            Status = OutboxMessageStatus.Pending
-        };
-
+        var oldMessage = CreateMessageWithTime(DateTime.UtcNow.AddMinutes(-5));
         var newMessage = CreateMessage();
 
-        await _repository.AddAsync(newMessage);
-        await _repository.AddAsync(oldMessage);
+        await _repository.InsertAsync(newMessage);
+        await _repository.InsertAsync(oldMessage);
 
         // Act
         var pending = await _repository.GetPendingAsync(10);
@@ -112,15 +119,16 @@ public class OutboxRepositoryTests
     }
 
     [Fact]
-    public async Task MarkAsPublishedAsync_ShouldUpdateStatus()
+    public async Task MarkAsPublished_ShouldUpdateStatus()
     {
         // Arrange
         var message = CreateMessage();
-        await _repository.AddAsync(message);
+        await _repository.InsertAsync(message);
         await _repository.GetPendingAsync(10); // Mark as processing
 
         // Act
-        await _repository.MarkAsPublishedAsync(message.Id);
+        message.MarkAsPublished();
+        await _repository.UpdateAsync(message);
         var pending = await _repository.GetPendingAsync(10);
 
         // Assert
@@ -128,15 +136,16 @@ public class OutboxRepositoryTests
     }
 
     [Fact]
-    public async Task MarkAsFailedAsync_ShouldUpdateStatusAndError()
+    public async Task MarkAsFailed_ShouldUpdateStatusAndError()
     {
         // Arrange
         var message = CreateMessage();
-        await _repository.AddAsync(message);
+        await _repository.InsertAsync(message);
         await _repository.GetPendingAsync(10); // Mark as processing
 
         // Act
-        await _repository.MarkAsFailedAsync(message.Id, "Test error");
+        message.MarkAsFailed("Test error");
+        await _repository.UpdateAsync(message);
         var pending = await _repository.GetPendingAsync(10);
 
         // Assert
@@ -144,15 +153,16 @@ public class OutboxRepositoryTests
     }
 
     [Fact]
-    public async Task IncrementRetryAsync_ShouldIncrementCountAndResetToPending()
+    public async Task IncrementRetry_ShouldIncrementCountAndResetToPending()
     {
         // Arrange
         var message = CreateMessage();
-        await _repository.AddAsync(message);
+        await _repository.InsertAsync(message);
         await _repository.GetPendingAsync(10); // Mark as processing
 
         // Act
-        await _repository.IncrementRetryAsync(message.Id, "Retry error");
+        message.IncrementRetry("Retry error");
+        await _repository.UpdateAsync(message);
         var pending = await _repository.GetPendingAsync(10);
 
         // Assert
@@ -166,9 +176,10 @@ public class OutboxRepositoryTests
     {
         // Arrange
         var message = CreateMessage();
-        await _repository.AddAsync(message);
+        await _repository.InsertAsync(message);
         await _repository.GetPendingAsync(10);
-        await _repository.MarkAsPublishedAsync(message.Id);
+        message.MarkAsPublished();
+        await _repository.UpdateAsync(message);
 
         // Act
         var deletedCount = await _repository.DeletePublishedAsync(DateTime.UtcNow.AddMinutes(1));
@@ -182,14 +193,63 @@ public class OutboxRepositoryTests
     {
         // Arrange
         var message = CreateMessage();
-        await _repository.AddAsync(message);
+        await _repository.InsertAsync(message);
         await _repository.GetPendingAsync(10);
-        await _repository.MarkAsPublishedAsync(message.Id);
+        message.MarkAsPublished();
+        await _repository.UpdateAsync(message);
 
         // Act
         var deletedCount = await _repository.DeletePublishedAsync(DateTime.UtcNow.AddMinutes(-1));
 
         // Assert
         deletedCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task GetAsync_ShouldReturnMessage()
+    {
+        // Arrange
+        var message = CreateMessage();
+        await _repository.InsertAsync(message);
+
+        // Act
+        var result = await _repository.GetAsync(message.Id);
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.Id.ShouldBe(message.Id);
+    }
+
+    [Fact]
+    public async Task GetAsync_ShouldThrowWhenNotFound()
+    {
+        // Act & Assert
+        await Should.ThrowAsync<KeyNotFoundException>(async () =>
+            await _repository.GetAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task FindAsync_ShouldReturnNullWhenNotFound()
+    {
+        // Act
+        var result = await _repository.FindAsync(Guid.NewGuid());
+
+        // Assert
+        result.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ShouldRemoveMessage()
+    {
+        // Arrange
+        var message = CreateMessage();
+        await _repository.InsertAsync(message);
+
+        // Act
+        await _repository.DeleteAsync(message);
+        var result = await _repository.FindAsync(message.Id);
+
+        // Assert
+        result.ShouldBeNull();
     }
 }

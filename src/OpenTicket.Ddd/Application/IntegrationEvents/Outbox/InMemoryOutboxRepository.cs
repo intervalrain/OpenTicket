@@ -10,20 +10,48 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
 {
     private readonly ConcurrentDictionary<Guid, OutboxMessage> _messages = new();
 
-    public Task AddAsync(OutboxMessage message, CancellationToken ct = default)
+    #region IRepository<OutboxMessage> Implementation
+
+    public Task<OutboxMessage> GetAsync(Guid id, CancellationToken ct = default)
     {
-        _messages.TryAdd(message.Id, message);
+        if (_messages.TryGetValue(id, out var message))
+            return Task.FromResult(message);
+
+        throw new KeyNotFoundException($"OutboxMessage with id {id} not found");
+    }
+
+    public Task<OutboxMessage?> FindAsync(Guid id, CancellationToken ct = default)
+    {
+        _messages.TryGetValue(id, out var message);
+        return Task.FromResult(message);
+    }
+
+    public Task<IReadOnlyList<OutboxMessage>> ListAllAsync(CancellationToken ct = default)
+    {
+        return Task.FromResult<IReadOnlyList<OutboxMessage>>(_messages.Values.ToList());
+    }
+
+    public Task InsertAsync(OutboxMessage aggregate, CancellationToken ct = default)
+    {
+        _messages.TryAdd(aggregate.Id, aggregate);
         return Task.CompletedTask;
     }
 
-    public Task AddRangeAsync(IEnumerable<OutboxMessage> messages, CancellationToken ct = default)
+    public Task UpdateAsync(OutboxMessage aggregate, CancellationToken ct = default)
     {
-        foreach (var message in messages)
-        {
-            _messages.TryAdd(message.Id, message);
-        }
+        _messages[aggregate.Id] = aggregate;
         return Task.CompletedTask;
     }
+
+    public Task DeleteAsync(OutboxMessage aggregate, CancellationToken ct = default)
+    {
+        _messages.TryRemove(aggregate.Id, out _);
+        return Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region IOutboxRepository Specific Methods
 
     public Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int batchSize, CancellationToken ct = default)
     {
@@ -36,41 +64,10 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
         // Mark as processing to prevent concurrent processing
         foreach (var message in pending)
         {
-            message.Status = OutboxMessageStatus.Processing;
+            message.MarkAsProcessing();
         }
 
         return Task.FromResult<IReadOnlyList<OutboxMessage>>(pending);
-    }
-
-    public Task MarkAsPublishedAsync(Guid id, CancellationToken ct = default)
-    {
-        if (_messages.TryGetValue(id, out var message))
-        {
-            message.Status = OutboxMessageStatus.Published;
-            message.PublishedAt = DateTime.UtcNow;
-        }
-        return Task.CompletedTask;
-    }
-
-    public Task MarkAsFailedAsync(Guid id, string error, CancellationToken ct = default)
-    {
-        if (_messages.TryGetValue(id, out var message))
-        {
-            message.Status = OutboxMessageStatus.Failed;
-            message.LastError = error;
-        }
-        return Task.CompletedTask;
-    }
-
-    public Task IncrementRetryAsync(Guid id, string error, CancellationToken ct = default)
-    {
-        if (_messages.TryGetValue(id, out var message))
-        {
-            message.RetryCount++;
-            message.LastError = error;
-            message.Status = OutboxMessageStatus.Pending; // Reset to pending for retry
-        }
-        return Task.CompletedTask;
     }
 
     public Task<int> DeletePublishedAsync(DateTime olderThan, CancellationToken ct = default)
@@ -87,4 +84,6 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
 
         return Task.FromResult(toDelete.Count);
     }
+
+    #endregion
 }

@@ -58,7 +58,9 @@ public sealed class OutboxProcessor : IOutboxProcessor
                 };
 
                 await _publishAction(eventMessage, ct);
-                await _outboxRepository.MarkAsPublishedAsync(message.Id, ct);
+
+                message.MarkAsPublished();
+                await _outboxRepository.UpdateAsync(message, ct);
 
                 processedCount++;
 
@@ -78,12 +80,14 @@ public sealed class OutboxProcessor : IOutboxProcessor
 
                 if (message.RetryCount + 1 >= _options.MaxRetryAttempts)
                 {
-                    await _outboxRepository.MarkAsFailedAsync(message.Id, ex.Message, ct);
+                    message.MarkAsFailed(ex.Message);
                 }
                 else
                 {
-                    await _outboxRepository.IncrementRetryAsync(message.Id, ex.Message, ct);
+                    message.IncrementRetry(ex.Message);
                 }
+
+                await _outboxRepository.UpdateAsync(message, ct);
             }
         }
 

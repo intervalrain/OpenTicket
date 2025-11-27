@@ -60,7 +60,9 @@ public sealed class OutboxProcessorHostedService : BackgroundService
             try
             {
                 await DispatchEventAsync(scope.ServiceProvider, message, ct);
-                await outboxRepository.MarkAsPublishedAsync(message.Id, ct);
+
+                message.MarkAsPublished();
+                await outboxRepository.UpdateAsync(message, ct);
 
                 _logger.LogInformation(
                     "Processed outbox message {MessageId} for event {EventType}",
@@ -70,7 +72,9 @@ public sealed class OutboxProcessorHostedService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process outbox message {MessageId}", message.Id);
-                await outboxRepository.MarkAsFailedAsync(message.Id, ex.Message, ct);
+
+                message.MarkAsFailed(ex.Message);
+                await outboxRepository.UpdateAsync(message, ct);
             }
         }
     }

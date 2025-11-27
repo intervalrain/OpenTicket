@@ -21,7 +21,7 @@ public sealed class Dispatcher : IDispatcher
         ArgumentNullException.ThrowIfNull(command);
 
         var commandType = command.GetType();
-        var invoker = CommandHandlerCache.GetOrAdd(commandType, type => CreateCommandInvoker<TResult>(type));
+        var invoker = CommandHandlerCache.GetOrAdd(commandType, CreateCommandInvoker<TResult>);
 
         return await invoker.InvokeAsync<TResult>(_serviceProvider, command, ct);
     }
@@ -31,7 +31,7 @@ public sealed class Dispatcher : IDispatcher
         ArgumentNullException.ThrowIfNull(query);
 
         var queryType = query.GetType();
-        var invoker = QueryHandlerCache.GetOrAdd(queryType, type => CreateQueryInvoker<TResult>(type));
+        var invoker = QueryHandlerCache.GetOrAdd(queryType, CreateQueryInvoker<TResult>);
 
         return await invoker.InvokeAsync<TResult>(_serviceProvider, query, ct);
     }

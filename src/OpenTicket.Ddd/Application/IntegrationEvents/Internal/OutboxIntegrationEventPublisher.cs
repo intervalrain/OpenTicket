@@ -18,30 +18,22 @@ public sealed class OutboxIntegrationEventPublisher : IIntegrationEventPublisher
     public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken ct = default)
         where TEvent : IIntegrationEvent
     {
-        var message = CreateOutboxMessage(@event);
-        await _outboxRepository.AddAsync(message, ct);
+        var message = OutboxMessage.Create(
+            @event.EventId,
+            @event.EventType,
+            @event.AggregateId,
+            IntegrationEventSerializer.Serialize(@event),
+            @event.CorrelationId);
+
+        await _outboxRepository.InsertAsync(message, ct);
     }
 
     public async Task PublishAsync<TEvent>(IEnumerable<TEvent> events, CancellationToken ct = default)
         where TEvent : IIntegrationEvent
     {
-        var messages = events.Select(CreateOutboxMessage).ToList();
-        await _outboxRepository.AddRangeAsync(messages, ct);
-    }
-
-    private static OutboxMessage CreateOutboxMessage<TEvent>(TEvent @event)
-        where TEvent : IIntegrationEvent
-    {
-        return new OutboxMessage
+        foreach (var @event in events)
         {
-            Id = Guid.NewGuid(),
-            EventId = @event.EventId,
-            EventType = @event.EventType,
-            AggregateId = @event.AggregateId,
-            Payload = IntegrationEventSerializer.Serialize(@event),
-            CorrelationId = @event.CorrelationId,
-            CreatedAt = DateTime.UtcNow,
-            Status = OutboxMessageStatus.Pending
-        };
+            await PublishAsync(@event, ct);
+        }
     }
 }
