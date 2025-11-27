@@ -1,7 +1,9 @@
+using OpenTicket.Api.Services;
 using OpenTicket.Application;
 using OpenTicket.Infrastructure.Database;
 using OpenTicket.Infrastructure.Identity;
 using OpenTicket.Infrastructure.Notification;
+using OpenTicket.Infrastructure.Notification.Abstractions;
 using Scalar.AspNetCore;
 
 namespace OpenTicket.Api;
@@ -25,8 +27,11 @@ public static class OpenTicketApiModule
         // Register Identity (Mock for MVP)
         services.AddMockIdentity(configuration);
 
-        // Register Notification (Console for MVP, use AddNotification for SMTP)
-        services.AddNotificationConsole(configuration);
+        // Register Notification channels (mode is controlled by appsettings)
+        services.AddNotification(configuration, NotificationChannel.Email);
+
+        // Register background service for outbox processing
+        services.AddHostedService<OutboxProcessorHostedService>();
 
         return services;
     }

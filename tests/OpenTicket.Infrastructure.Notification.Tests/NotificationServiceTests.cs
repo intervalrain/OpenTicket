@@ -70,7 +70,7 @@ public class NotificationServiceTests
 
         // Assert
         result.Success.ShouldBeFalse();
-        result.ErrorMessage.ShouldContain("No sender for channel");
+        result.ErrorMessage?.ShouldContain("No sender for channel");
     }
 
     [Fact]

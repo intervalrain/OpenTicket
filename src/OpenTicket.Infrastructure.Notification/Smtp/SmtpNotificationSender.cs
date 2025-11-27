@@ -1,4 +1,5 @@
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
@@ -109,10 +110,15 @@ public sealed class SmtpNotificationSender : INotificationSender, IDisposable
 
         _client.Timeout = _options.TimeoutSeconds * 1000;
 
+        // Use StartTls for port 587, SSL for port 465
+        var secureSocketOptions = _options.Port == 587
+            ? SecureSocketOptions.StartTls
+            : (_options.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.None);
+
         await _client.ConnectAsync(
             _options.Host,
             _options.Port,
-            _options.UseSsl,
+            secureSocketOptions,
             ct);
 
         if (!string.IsNullOrEmpty(_options.Username))

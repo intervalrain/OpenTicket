@@ -30,4 +30,26 @@ public class NotificationOptions
     /// Maximum retry attempts for failed notifications.
     /// </summary>
     public int MaxRetryAttempts { get; set; } = 3;
+
+    /// <summary>
+    /// Notification mode: Console for testing/development, Production for real sending.
+    /// </summary>
+    public NotificationMode Mode { get; set; } = NotificationMode.Console;
+}
+
+/// <summary>
+/// Notification sending mode.
+/// </summary>
+public enum NotificationMode
+{
+    /// <summary>
+    /// Console mode: logs notifications instead of sending them.
+    /// Useful for development and testing.
+    /// </summary>
+    Console,
+
+    /// <summary>
+    /// Production mode: sends notifications via real providers (SMTP, SMS gateway, etc.).
+    /// </summary>
+    Production
 }
