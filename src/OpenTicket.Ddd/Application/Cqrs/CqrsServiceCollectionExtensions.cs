@@ -4,6 +4,10 @@ using OpenTicket.Ddd.Application.Cqrs.Audit;
 using OpenTicket.Ddd.Application.Cqrs.Behaviors;
 using OpenTicket.Ddd.Application.Cqrs.Internal;
 using OpenTicket.Ddd.Application.Cqrs.Validation;
+using OpenTicket.Ddd.Application.IntegrationEvents;
+using OpenTicket.Ddd.Application.IntegrationEvents.Idempotency;
+using OpenTicket.Ddd.Application.IntegrationEvents.Internal;
+using OpenTicket.Ddd.Application.IntegrationEvents.Outbox;
 
 namespace OpenTicket.Ddd.Application.Cqrs;
 
@@ -171,6 +175,21 @@ public static class CqrsServiceCollectionExtensions
         services.AddLoggingBehavior();
         services.AddValidationBehavior();
         services.AddTransactionBehavior();
+        return services;
+    }
+
+    /// <summary>
+    /// Adds integration events infrastructure with outbox pattern.
+    /// </summary>
+    public static IServiceCollection AddIntegrationEvents(this IServiceCollection services)
+    {
+        // Outbox infrastructure
+        services.AddSingleton<IOutboxRepository, InMemoryOutboxRepository>();
+        services.AddSingleton<IIdempotencyService, InMemoryIdempotencyService>();
+
+        // Event publisher
+        services.AddSingleton<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
+
         return services;
     }
 }
