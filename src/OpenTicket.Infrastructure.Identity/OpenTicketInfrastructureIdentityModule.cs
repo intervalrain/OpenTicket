@@ -42,6 +42,7 @@ public static class OpenTicketInfrastructureIdentityModule
 
     /// <summary>
     /// Adds mock identity provider for development and testing.
+    /// Configures a pass-through authentication handler that always succeeds.
     /// </summary>
     public static IServiceCollection AddMockIdentity(
         this IServiceCollection services,
@@ -50,6 +51,14 @@ public static class OpenTicketInfrastructureIdentityModule
         services.Configure<MockUserOptions>(
             configuration.GetSection(MockUserOptions.SectionName));
 
+        // Add authentication with mock handler that always succeeds
+        services.AddAuthentication("Mock")
+            .AddScheme<AuthenticationSchemeOptions, MockAuthenticationHandler>("Mock", null);
+
+        // Add authorization
+        services.AddAuthorization();
+
+        services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserProvider, MockCurrentUserProvider>();
 
         return services;

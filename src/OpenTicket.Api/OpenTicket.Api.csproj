@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\OpenTicket.Application\OpenTicket.Application.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure\OpenTicket.Infrastructure.csproj" />
+    <ProjectReference Include="..\OpenTicket.Infrastructure.Cache\OpenTicket.Infrastructure.Cache.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure.Database\OpenTicket.Infrastructure.Database.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure.Payment\OpenTicket.Infrastructure.Payment.csproj" />
     <ProjectReference Include="..\OpenTicket.Infrastructure.Identity\OpenTicket.Infrastructure.Identity.csproj" />
