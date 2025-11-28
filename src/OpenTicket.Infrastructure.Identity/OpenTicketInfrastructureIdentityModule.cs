@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -190,10 +191,58 @@ public static class OpenTicketInfrastructureIdentityModule
                 options.TokenEndpoint = "https://github.com/login/oauth/access_token";
                 options.UserInformationEndpoint = "https://api.github.com/user";
                 options.SaveTokens = true;
-                options.ClaimActions.MapJsonKey("sub", "id");
-                options.ClaimActions.MapJsonKey("name", "name");
-                options.ClaimActions.MapJsonKey("email", "email");
-                options.ClaimActions.MapJsonKey("avatar_url", "avatar_url");
+
+                // Request email scope
+                options.Scope.Add("user:email");
+
+                // Map claims from GitHub user info
+                options.ClaimActions.MapJsonKey(System.Security.Claims.ClaimTypes.NameIdentifier, "id");
+                options.ClaimActions.MapJsonKey(System.Security.Claims.ClaimTypes.Name, "name");
+                options.ClaimActions.MapJsonKey(System.Security.Claims.ClaimTypes.Email, "email");
+                options.ClaimActions.MapJsonKey("urn:github:login", "login");
+                options.ClaimActions.MapJsonKey("urn:github:avatar", "avatar_url");
+
+                // Fetch user info from GitHub API
+                options.Events.OnCreatingTicket = async context =>
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, options.UserInformationEndpoint);
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+                    request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                    request.Headers.UserAgent.ParseAdd("OpenTicket");
+
+                    using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+                    response.EnsureSuccessStatusCode();
+
+                    var user = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+                    context.RunClaimActions(user);
+
+                    // If email is not public, fetch from emails endpoint
+                    if (string.IsNullOrEmpty(user.GetProperty("email").GetString()))
+                    {
+                        using var emailRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user/emails");
+                        emailRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+                        emailRequest.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                        emailRequest.Headers.UserAgent.ParseAdd("OpenTicket");
+
+                        using var emailResponse = await context.Backchannel.SendAsync(emailRequest, context.HttpContext.RequestAborted);
+                        if (emailResponse.IsSuccessStatusCode)
+                        {
+                            var emails = await emailResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+                            var primaryEmail = emails.EnumerateArray()
+                                .FirstOrDefault(e => e.GetProperty("primary").GetBoolean());
+
+                            if (primaryEmail.ValueKind != System.Text.Json.JsonValueKind.Undefined)
+                            {
+                                var email = primaryEmail.GetProperty("email").GetString();
+                                if (!string.IsNullOrEmpty(email))
+                                {
+                                    context.Identity?.AddClaim(new System.Security.Claims.Claim(
+                                        System.Security.Claims.ClaimTypes.Email, email));
+                                }
+                            }
+                        }
+                    }
+                };
             });
         }
 
