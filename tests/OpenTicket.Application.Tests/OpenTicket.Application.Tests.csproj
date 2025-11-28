@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OpenTicket.Application\OpenTicket.Application.csproj" />
+    <ProjectReference Include="..\..\src\OpenTicket.Infrastructure.Cache\OpenTicket.Infrastructure.Cache.csproj" />
   </ItemGroup>
 
 </Project>

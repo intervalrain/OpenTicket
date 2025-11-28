@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.OpenApi.Models;
 using OpenTicket.Api.Services;
 using OpenTicket.Application;
+using OpenTicket.Infrastructure.Cache;
+using OpenTicket.Infrastructure.Cache.Abstractions;
 using OpenTicket.Infrastructure.Database;
 using OpenTicket.Infrastructure.Identity;
 using OpenTicket.Infrastructure.MessageBroker;
@@ -17,8 +21,40 @@ public static class OpenTicketApiModule
         // Add controllers
         services.AddControllers();
 
-        // Add OpenAPI/Swagger
-        services.AddOpenApi();
+        // Add OpenAPI/Swagger with JWT Bearer authentication
+        services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer((document, context, cancellationToken) =>
+            {
+                // Add JWT Bearer security scheme
+                document.Components ??= new OpenApiComponents();
+                document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = JwtBearerDefaults.AuthenticationScheme,
+                    BearerFormat = "JWT",
+                    Description = "Enter your JWT token. You can get one by logging in via /api/auth/login/{provider}"
+                };
+
+                // Apply security requirement globally
+                document.SecurityRequirements.Add(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+
+                return Task.CompletedTask;
+            });
+        });
 
         // Register Application layer (CQRS, handlers, settings)
         services.AddApplication(configuration);
@@ -26,8 +62,11 @@ public static class OpenTicketApiModule
         // Register Persistence (InMemory for MVP)
         services.AddPersistence(DatabaseOption.InMemory);
 
-        // Register Identity (Mock for MVP)
-        services.AddMockIdentity(configuration);
+        // Register Cache (InMemory for MVP, Redis/NATS KV for production)
+        services.AddCache(configuration, CacheProvider.InMemory);
+
+        // Register Identity (OAuth with JWT for production, Mock fallback for testing)
+        services.AddOAuthIdentity(configuration);
 
         // Register Message Broker (InMemory for MVP, NATS/Redis for production)
         services.AddMessageBroker(configuration, MessageBrokerOption.InMemory);
@@ -50,6 +89,11 @@ public static class OpenTicketApiModule
         }
 
         app.UseHttpsRedirection();
+
+        // Enable authentication and authorization middleware
+        app.UseAuthentication();
+        app.UseAuthorization();
+
         app.MapControllers();
 
         return app;

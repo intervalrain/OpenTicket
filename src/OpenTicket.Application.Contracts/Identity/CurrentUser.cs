@@ -38,6 +38,22 @@ public record CurrentUser
     public IReadOnlyList<string> Roles { get; init; } = [];
 
     /// <summary>
+    /// Whether the user has an active subscription.
+    /// Subscribers have unlimited access to certain features.
+    /// </summary>
+    public bool HasSubscription { get; init; }
+
+    /// <summary>
+    /// Checks if the user has a specific role.
+    /// </summary>
+    public bool IsInRole(string role) => Roles.Contains(role, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Checks if the user is an admin.
+    /// </summary>
+    public bool IsAdmin => IsInRole(Identity.Roles.Admin);
+
+    /// <summary>
     /// Creates an anonymous (unauthenticated) user.
     /// </summary>
     public static CurrentUser Anonymous => new()
