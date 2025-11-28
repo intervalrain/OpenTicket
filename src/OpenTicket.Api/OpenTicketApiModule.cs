@@ -1,5 +1,7 @@
 using OpenTicket.Api.Services;
 using OpenTicket.Application;
+using OpenTicket.Infrastructure.Cache;
+using OpenTicket.Infrastructure.Cache.Abstractions;
 using OpenTicket.Infrastructure.Database;
 using OpenTicket.Infrastructure.Identity;
 using OpenTicket.Infrastructure.MessageBroker;
@@ -25,6 +27,9 @@ public static class OpenTicketApiModule
 
         // Register Persistence (InMemory for MVP)
         services.AddPersistence(DatabaseOption.InMemory);
+
+        // Register Cache (InMemory for MVP, Redis/NATS KV for production)
+        services.AddCache(configuration, CacheProvider.InMemory);
 
         // Register Identity (Mock for MVP)
         services.AddMockIdentity(configuration);
