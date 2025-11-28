@@ -1,18 +1,23 @@
-using OpenTicket.Application.Contracts.Notes.Events;
+using Microsoft.Extensions.Options;
 using OpenTicket.Ddd.Application.IntegrationEvents;
 using OpenTicket.Ddd.Application.IntegrationEvents.Internal;
 using OpenTicket.Ddd.Application.IntegrationEvents.Outbox;
+using OpenTicket.Infrastructure.MessageBroker.IntegrationEvents;
 
 namespace OpenTicket.Api.Services;
 
 /// <summary>
-/// Background service that processes outbox messages and dispatches them to handlers.
+/// Background service that processes outbox messages and publishes them through the message broker.
+/// For InMemory mode, events are dispatched directly to handlers.
+/// For NATS/Redis mode, events are published to the message broker for distributed processing.
 /// </summary>
 public sealed class OutboxProcessorHostedService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<OutboxProcessorHostedService> _logger;
     private readonly TimeSpan _pollingInterval = TimeSpan.FromSeconds(5);
+    private readonly TimeSpan _cleanupInterval = TimeSpan.FromHours(1);
+    private DateTime _lastCleanup = DateTime.MinValue;
 
     public OutboxProcessorHostedService(
         IServiceProvider serviceProvider,
@@ -31,6 +36,13 @@ public sealed class OutboxProcessorHostedService : BackgroundService
             try
             {
                 await ProcessOutboxMessagesAsync(stoppingToken);
+
+                // Periodic cleanup
+                if (DateTime.UtcNow - _lastCleanup > _cleanupInterval)
+                {
+                    await CleanupOldMessagesAsync(stoppingToken);
+                    _lastCleanup = DateTime.UtcNow;
+                }
             }
             catch (Exception ex)
             {
@@ -47,64 +59,67 @@ public sealed class OutboxProcessorHostedService : BackgroundService
     {
         using var scope = _serviceProvider.CreateScope();
         var outboxRepository = scope.ServiceProvider.GetRequiredService<IOutboxRepository>();
+        var outboxOptions = scope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
 
-        var messages = await outboxRepository.GetPendingAsync(10, ct);
+        // Determine which publisher to use based on registered services
+        Func<IntegrationEventMessage, CancellationToken, Task> publishAction;
 
-        if (messages.Count == 0)
-            return;
-
-        _logger.LogDebug("Processing {Count} outbox messages", messages.Count);
-
-        foreach (var message in messages)
+        var inMemoryBus = scope.ServiceProvider.GetService<InMemoryIntegrationEventBus>();
+        if (inMemoryBus != null)
         {
-            try
+            // InMemory mode: dispatch directly through in-memory bus
+            publishAction = inMemoryBus.PublishAsync;
+            _logger.LogDebug("Using InMemory integration event bus");
+        }
+        else
+        {
+            // Broker mode: publish through message broker
+            var brokerPublisher = scope.ServiceProvider.GetService<BrokerIntegrationEventPublisher>();
+            if (brokerPublisher != null)
             {
-                await DispatchEventAsync(scope.ServiceProvider, message, ct);
-
-                message.MarkAsPublished();
-                await outboxRepository.UpdateAsync(message, ct);
-
-                _logger.LogInformation(
-                    "Processed outbox message {MessageId} for event {EventType}",
-                    message.Id,
-                    message.EventType);
+                publishAction = brokerPublisher.PublishAsync;
+                _logger.LogDebug("Using broker integration event publisher");
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Failed to process outbox message {MessageId}", message.Id);
-
-                message.MarkAsFailed(ex.Message);
-                await outboxRepository.UpdateAsync(message, ct);
+                _logger.LogWarning("No integration event publisher configured, skipping outbox processing");
+                return;
             }
+        }
+
+        var processor = new OutboxProcessor(
+            outboxRepository,
+            outboxOptions,
+            logger,
+            publishAction);
+
+        var processedCount = await processor.ProcessAsync(ct);
+
+        if (processedCount > 0)
+        {
+            _logger.LogDebug("Processed {Count} outbox messages", processedCount);
         }
     }
 
-    private async Task DispatchEventAsync(IServiceProvider sp, OutboxMessage message, CancellationToken ct)
+    private async Task CleanupOldMessagesAsync(CancellationToken ct)
     {
-        // Dispatch based on event type
-        switch (message.EventType)
+        using var scope = _serviceProvider.CreateScope();
+        var outboxRepository = scope.ServiceProvider.GetRequiredService<IOutboxRepository>();
+        var outboxOptions = scope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
+
+        var processor = new OutboxProcessor(
+            outboxRepository,
+            outboxOptions,
+            logger,
+            (_, _) => Task.CompletedTask);
+
+        var deletedCount = await processor.CleanupAsync(ct);
+
+        if (deletedCount > 0)
         {
-            case "NoteCreatedEvent":
-                var createdEvent = IntegrationEventSerializer.Deserialize<NoteCreatedEvent>(message.Payload);
-                var createdHandler = sp.GetRequiredService<IIntegrationEventHandler<NoteCreatedEvent>>();
-                await createdHandler.HandleAsync(createdEvent!, ct);
-                break;
-
-            case "NoteUpdatedEvent":
-                var updatedEvent = IntegrationEventSerializer.Deserialize<NoteUpdatedEvent>(message.Payload);
-                var updatedHandler = sp.GetRequiredService<IIntegrationEventHandler<NoteUpdatedEvent>>();
-                await updatedHandler.HandleAsync(updatedEvent!, ct);
-                break;
-
-            case "NotePatchedEvent":
-                var patchedEvent = IntegrationEventSerializer.Deserialize<NotePatchedEvent>(message.Payload);
-                var patchedHandler = sp.GetRequiredService<IIntegrationEventHandler<NotePatchedEvent>>();
-                await patchedHandler.HandleAsync(patchedEvent!, ct);
-                break;
-
-            default:
-                _logger.LogWarning("Unknown event type: {EventType}", message.EventType);
-                break;
+            _logger.LogInformation("Cleaned up {Count} old outbox messages", deletedCount);
         }
     }
 }

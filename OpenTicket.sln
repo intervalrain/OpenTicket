@@ -41,6 +41,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTicket.Infrastructure.N
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTicket.Infrastructure.Notification.Tests", "tests\OpenTicket.Infrastructure.Notification.Tests\OpenTicket.Infrastructure.Notification.Tests.csproj", "{9F770D95-2BB3-4AC3-B529-0A1851A2E031}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTicket.Infrastructure.Cache", "src\OpenTicket.Infrastructure.Cache\OpenTicket.Infrastructure.Cache.csproj", "{CF83268C-FEFA-4844-95B7-501BFB19D405}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTicket.Infrastructure.Cache.Tests", "tests\OpenTicket.Infrastructure.Cache.Tests\OpenTicket.Infrastructure.Cache.Tests.csproj", "{028E7E72-32EA-4172-AE73-F2EBA792B8D0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -118,6 +122,14 @@ Global
 		{9F770D95-2BB3-4AC3-B529-0A1851A2E031}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F770D95-2BB3-4AC3-B529-0A1851A2E031}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9F770D95-2BB3-4AC3-B529-0A1851A2E031}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF83268C-FEFA-4844-95B7-501BFB19D405}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF83268C-FEFA-4844-95B7-501BFB19D405}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF83268C-FEFA-4844-95B7-501BFB19D405}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF83268C-FEFA-4844-95B7-501BFB19D405}.Release|Any CPU.Build.0 = Release|Any CPU
+		{028E7E72-32EA-4172-AE73-F2EBA792B8D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{028E7E72-32EA-4172-AE73-F2EBA792B8D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{028E7E72-32EA-4172-AE73-F2EBA792B8D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{028E7E72-32EA-4172-AE73-F2EBA792B8D0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{27514652-C4E2-4415-899E-DF2610DDA123} = {68632520-F5A2-4208-84A1-0EAEB5D5D051}
@@ -137,5 +149,7 @@ Global
 		{25B591E8-E767-49A4-BFFC-DFAE9A06D5CA} = {68632520-F5A2-4208-84A1-0EAEB5D5D051}
 		{23745189-5FAF-48E9-9DF6-76F18B9E2B65} = {68632520-F5A2-4208-84A1-0EAEB5D5D051}
 		{9F770D95-2BB3-4AC3-B529-0A1851A2E031} = {6A7B2C7C-33D7-445D-BCBD-8C1057CD0F72}
+		{CF83268C-FEFA-4844-95B7-501BFB19D405} = {68632520-F5A2-4208-84A1-0EAEB5D5D051}
+		{028E7E72-32EA-4172-AE73-F2EBA792B8D0} = {6A7B2C7C-33D7-445D-BCBD-8C1057CD0F72}
 	EndGlobalSection
 EndGlobal
