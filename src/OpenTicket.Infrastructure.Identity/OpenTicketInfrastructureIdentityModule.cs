@@ -88,17 +88,18 @@ public static class OpenTicketInfrastructureIdentityModule
             ?? new OAuthOptions();
 
         // Determine which providers to enable based on configuration
+        // Only enable if Enabled=true AND credentials are configured
         var providers = OAuthProviders.None;
 
-        if (oauthOptions.Google?.Enabled == true)
+        if (IsProviderConfigured(oauthOptions.Google))
             providers |= OAuthProviders.Google;
-        if (oauthOptions.Facebook?.Enabled == true)
+        if (IsProviderConfigured(oauthOptions.Facebook))
             providers |= OAuthProviders.Facebook;
-        if (oauthOptions.GitHub?.Enabled == true)
+        if (IsProviderConfigured(oauthOptions.GitHub))
             providers |= OAuthProviders.GitHub;
-        if (oauthOptions.Microsoft?.Enabled == true)
+        if (IsProviderConfigured(oauthOptions.Microsoft))
             providers |= OAuthProviders.Microsoft;
-        if (oauthOptions.Apple?.Enabled == true)
+        if (IsProviderConfigured(oauthOptions.Apple))
             providers |= OAuthProviders.Apple;
 
         return AddOAuthIdentity(services, configuration, providers);
@@ -231,5 +232,15 @@ public static class OpenTicketInfrastructureIdentityModule
         services.AddSingleton(new EnabledOAuthProviders(providers));
 
         return services;
+    }
+
+    /// <summary>
+    /// Checks if an OAuth provider is properly configured (enabled and has credentials).
+    /// </summary>
+    private static bool IsProviderConfigured(OAuthProviderSettings? settings)
+    {
+        return settings is { Enabled: true }
+            && !string.IsNullOrWhiteSpace(settings.ClientId)
+            && !string.IsNullOrWhiteSpace(settings.ClientSecret);
     }
 }

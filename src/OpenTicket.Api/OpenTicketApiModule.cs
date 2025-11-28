@@ -31,8 +31,8 @@ public static class OpenTicketApiModule
         // Register Cache (InMemory for MVP, Redis/NATS KV for production)
         services.AddCache(configuration, CacheProvider.InMemory);
 
-        // Register Identity (Mock for MVP)
-        services.AddMockIdentity(configuration);
+        // Register Identity (OAuth with JWT for production, Mock fallback for testing)
+        services.AddOAuthIdentity(configuration);
 
         // Register Message Broker (InMemory for MVP, NATS/Redis for production)
         services.AddMessageBroker(configuration, MessageBrokerOption.InMemory);
