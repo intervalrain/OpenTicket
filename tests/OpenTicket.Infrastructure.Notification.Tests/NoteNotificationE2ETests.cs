@@ -1,7 +1,9 @@
+using ErrorOr;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTicket.Application.Contracts.Identity;
 using OpenTicket.Application.Contracts.Notes.Commands;
 using OpenTicket.Application.Contracts.Notes.Events;
+using OpenTicket.Application.Contracts.RateLimiting;
 using OpenTicket.Application.Notes.Commands;
 using OpenTicket.Ddd.Application.Cqrs;
 using OpenTicket.Ddd.Application.IntegrationEvents;
@@ -10,6 +12,7 @@ using OpenTicket.Ddd.Application.IntegrationEvents.Internal;
 using OpenTicket.Ddd.Application.IntegrationEvents.Outbox;
 using OpenTicket.Ddd.Infrastructure;
 using OpenTicket.Domain.Notes.Entities;
+using OpenTicket.Domain.Shared.Identities;
 using OpenTicket.Infrastructure.Identity.Mock;
 using OpenTicket.Infrastructure.Notification.Abstractions;
 using OpenTicket.Infrastructure.Notification.Handlers;
@@ -65,8 +68,11 @@ public class NoteNotificationE2ETests
         // Add Integration Event Publisher
         services.AddSingleton<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
 
+        // Add Rate Limit Service (mock that always allows)
+        services.AddSingleton<IRateLimitService, MockRateLimitService>();
+
         // Add Command Handler
-        services.AddScoped<ICommandHandler<CreateNoteCommand, CreateNoteCommandResult>, CreateNoteCommandHandler>();
+        services.AddScoped<ICommandHandler<CreateNoteCommand, ErrorOr<CreateNoteCommandResult>>, CreateNoteCommandHandler>();
 
         // Add Event Handlers
         services.AddScoped<IIntegrationEventHandler<NoteCreatedEvent>, NoteCreatedEventHandler>();
@@ -79,7 +85,7 @@ public class NoteNotificationE2ETests
     {
         // Arrange
         using var scope = _serviceProvider.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<CreateNoteCommand, CreateNoteCommandResult>>();
+        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<CreateNoteCommand, ErrorOr<CreateNoteCommandResult>>>();
         var outboxRepository = scope.ServiceProvider.GetRequiredService<IOutboxRepository>();
 
         var command = new CreateNoteCommand("E2E Test Note", "This note was created in an E2E test.");
@@ -88,14 +94,14 @@ public class NoteNotificationE2ETests
         var result = await handler.HandleAsync(command);
 
         // Assert: Command succeeded
-        result.ShouldNotBeNull();
-        result.Id.ShouldNotBe(Guid.Empty);
+        result.IsError.ShouldBeFalse();
+        result.Value.Id.ShouldNotBe(Guid.Empty);
 
         // Assert: Event was stored in outbox
         var pendingMessages = await outboxRepository.GetPendingAsync(10);
         pendingMessages.ShouldNotBeEmpty();
         pendingMessages.ShouldContain(m => m.EventType == "NoteCreatedEvent");
-        pendingMessages.ShouldContain(m => m.AggregateId == result.Id.ToString());
+        pendingMessages.ShouldContain(m => m.AggregateId == result.Value.Id.ToString());
 
         // Act: Simulate outbox processor - deserialize and handle the event
         var message = pendingMessages.First(m => m.EventType == "NoteCreatedEvent");
@@ -130,11 +136,12 @@ public class NoteNotificationE2ETests
         services.Configure<NotificationOptions>(opt => opt.Enabled = false); // Disabled!
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
-        services.AddScoped<ICommandHandler<CreateNoteCommand, CreateNoteCommandResult>, CreateNoteCommandHandler>();
+        services.AddSingleton<IRateLimitService, MockRateLimitService>();
+        services.AddScoped<ICommandHandler<CreateNoteCommand, ErrorOr<CreateNoteCommandResult>>, CreateNoteCommandHandler>();
 
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<CreateNoteCommand, CreateNoteCommandResult>>();
+        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<CreateNoteCommand, ErrorOr<CreateNoteCommandResult>>>();
         var outboxRepository = scope.ServiceProvider.GetRequiredService<IOutboxRepository>();
 
         var command = new CreateNoteCommand("Disabled Test", "Notifications are disabled.");
@@ -143,7 +150,7 @@ public class NoteNotificationE2ETests
         var result = await handler.HandleAsync(command);
 
         // Assert: Command succeeded
-        result.ShouldNotBeNull();
+        result.IsError.ShouldBeFalse();
 
         // Assert: Event was still published to outbox (decoupled from notification)
         var pendingMessages = await outboxRepository.GetPendingAsync(10);
@@ -156,7 +163,7 @@ public class NoteNotificationE2ETests
     {
         // Arrange
         using var scope = _serviceProvider.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<CreateNoteCommand, CreateNoteCommandResult>>();
+        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<CreateNoteCommand, ErrorOr<CreateNoteCommandResult>>>();
         var eventHandler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<NoteCreatedEvent>>();
         var outboxRepository = scope.ServiceProvider.GetRequiredService<IOutboxRepository>();
 
@@ -168,7 +175,7 @@ public class NoteNotificationE2ETests
         };
 
         // Act: Create all notes
-        var results = new List<CreateNoteCommandResult>();
+        var results = new List<ErrorOr<CreateNoteCommandResult>>();
         foreach (var command in commands)
         {
             results.Add(await handler.HandleAsync(command));
@@ -176,7 +183,7 @@ public class NoteNotificationE2ETests
 
         // Assert: All commands succeeded
         results.Count.ShouldBe(3);
-        results.ShouldAllBe(r => r.Id != Guid.Empty);
+        results.ShouldAllBe(r => !r.IsError && r.Value.Id != Guid.Empty);
 
         // Act: Process all events
         var pendingMessages = await outboxRepository.GetPendingAsync(10);
@@ -255,6 +262,27 @@ public class NoteNotificationE2ETests
         {
             _notes.Remove(aggregate.Id);
             return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// Mock rate limit service that always allows actions (for E2E tests).
+    /// </summary>
+    private class MockRateLimitService : IRateLimitService
+    {
+        public Task<ErrorOr<Success>> CheckRateLimitAsync(UserId userId, RateLimitedAction action, CancellationToken ct = default)
+        {
+            return Task.FromResult<ErrorOr<Success>>(Result.Success);
+        }
+
+        public Task RecordActionAsync(UserId userId, RateLimitedAction action, CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<int> GetRemainingQuotaAsync(UserId userId, RateLimitedAction action, CancellationToken ct = default)
+        {
+            return Task.FromResult(int.MaxValue);
         }
     }
 }

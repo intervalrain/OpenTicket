@@ -1,6 +1,10 @@
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTicket.Application.Authorization;
+using OpenTicket.Application.Contracts.Authorization;
+using OpenTicket.Application.Contracts.RateLimiting;
+using OpenTicket.Application.RateLimiting;
 using OpenTicket.Application.Tickets.Settings;
 using OpenTicket.Ddd.Application.Cqrs;
 
@@ -25,6 +29,10 @@ public static class OpenTicketApplicationModule
 
         // Register integration events infrastructure
         services.AddIntegrationEvents();
+
+        // Register authorization and rate limiting services
+        services.AddScoped<IAuthorizationService, AuthorizationService>();
+        services.AddScoped<IRateLimitService, RateLimitService>();
 
         return services;
     }

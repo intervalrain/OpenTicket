@@ -22,7 +22,8 @@ public sealed class MockCurrentUserProvider : ICurrentUserProvider
             Name = opt.Name,
             IsAuthenticated = true,
             Provider = "Mock",
-            Roles = opt.Roles
+            Roles = opt.Roles,
+            HasSubscription = opt.HasSubscription
         };
     }
 

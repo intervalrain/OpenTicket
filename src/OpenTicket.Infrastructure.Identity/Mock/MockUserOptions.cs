@@ -30,4 +30,9 @@ public class MockUserOptions
     /// The mock user's roles.
     /// </summary>
     public List<string> Roles { get; set; } = ["User"];
+
+    /// <summary>
+    /// Whether the mock user has an active subscription.
+    /// </summary>
+    public bool HasSubscription { get; set; } = false;
 }
