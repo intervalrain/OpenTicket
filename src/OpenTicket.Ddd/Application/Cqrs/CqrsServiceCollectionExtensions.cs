@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTicket.Ddd.Application.Cqrs.Audit;
+using OpenTicket.Ddd.Application.Cqrs.Authorization;
 using OpenTicket.Ddd.Application.Cqrs.Behaviors;
 using OpenTicket.Ddd.Application.Cqrs.Internal;
 using OpenTicket.Ddd.Application.Cqrs.Validation;
@@ -153,6 +154,21 @@ public static class CqrsServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Adds the authorization pipeline behavior for AOP-style authorization.
+    /// Requires IRequestAuthorizationService to be registered.
+    /// </summary>
+    /// <remarks>
+    /// This behavior only applies to requests that implement
+    /// <see cref="IAuthorizeableRequest{TResponse}"/> and are decorated with
+    /// <see cref="AuthorizeAttribute"/>.
+    /// </remarks>
+    public static IServiceCollection AddAuthorizationBehavior(this IServiceCollection services)
+    {
+        services.AddPipelineBehavior(typeof(AuthorizationBehavior<,>));
+        return services;
+    }
+
+    /// <summary>
     /// Adds the audit pipeline behavior with trace ID support.
     /// </summary>
     public static IServiceCollection AddAuditBehavior(this IServiceCollection services)
@@ -166,13 +182,19 @@ public static class CqrsServiceCollectionExtensions
     /// Adds all standard pipeline behaviors in the recommended order:
     /// 1. Audit (trace ID setup)
     /// 2. Logging
-    /// 3. Validation
-    /// 4. Transaction
+    /// 3. Authorization (AOP-style, for requests with [Authorize] attribute)
+    /// 4. Validation
+    /// 5. Transaction
     /// </summary>
+    /// <remarks>
+    /// Note: Authorization behavior requires <see cref="IRequestAuthorizationService"/>
+    /// to be registered separately (typically in the Application module).
+    /// </remarks>
     public static IServiceCollection AddStandardBehaviors(this IServiceCollection services)
     {
         services.AddAuditBehavior();
         services.AddLoggingBehavior();
+        services.AddAuthorizationBehavior();
         services.AddValidationBehavior();
         services.AddTransactionBehavior();
         return services;

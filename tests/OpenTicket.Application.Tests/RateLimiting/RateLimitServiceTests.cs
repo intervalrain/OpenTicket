@@ -313,8 +313,8 @@ public class RateLimitServiceTests
         bool hasSubscription = false)
     {
         IReadOnlyList<string> roles = isAdmin
-            ? [WellKnownRoles.Admin, WellKnownRoles.User]
-            : [WellKnownRoles.User];
+            ? [Roles.Admin, Roles.User]
+            : [Roles.User];
 
         return new CurrentUser
         {

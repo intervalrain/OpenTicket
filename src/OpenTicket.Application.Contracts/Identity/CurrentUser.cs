@@ -51,7 +51,7 @@ public record CurrentUser
     /// <summary>
     /// Checks if the user is an admin.
     /// </summary>
-    public bool IsAdmin => IsInRole(WellKnownRoles.Admin);
+    public bool IsAdmin => IsInRole(Identity.Roles.Admin);
 
     /// <summary>
     /// Creates an anonymous (unauthenticated) user.

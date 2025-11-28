@@ -1,9 +1,9 @@
 namespace OpenTicket.Application.Contracts.Identity;
 
 /// <summary>
-/// Well-known role names used throughout the application.
+/// Standard role names used throughout the application.
 /// </summary>
-public static class WellKnownRoles
+public static class Roles
 {
     /// <summary>
     /// Administrator role with full system access.

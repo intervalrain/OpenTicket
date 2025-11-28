@@ -28,9 +28,14 @@ public class OAuthOptions
     public OAuthProviderSettings? GitHub { get; set; }
 
     /// <summary>
+    /// Microsoft OAuth configuration.
+    /// </summary>
+    public OAuthProviderSettings? Microsoft { get; set; }
+
+    /// <summary>
     /// Apple OAuth configuration.
     /// </summary>
-    public OAuthProviderSettings? Apple { get; set; }
+    public AppleOAuthSettings? Apple { get; set; }
 }
 
 /// <summary>
@@ -83,4 +88,25 @@ public class OAuthProviderSettings
     /// OAuth client secret.
     /// </summary>
     public string ClientSecret { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Apple-specific OAuth settings (Sign in with Apple requires additional configuration).
+/// </summary>
+public class AppleOAuthSettings : OAuthProviderSettings
+{
+    /// <summary>
+    /// Apple Developer Team ID.
+    /// </summary>
+    public string TeamId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Key ID for the private key.
+    /// </summary>
+    public string KeyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Path to the .p8 private key file, or the key content itself.
+    /// </summary>
+    public string PrivateKey { get; set; } = string.Empty;
 }

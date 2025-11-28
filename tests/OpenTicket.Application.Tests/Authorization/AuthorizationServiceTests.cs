@@ -194,8 +194,8 @@ public class AuthorizationServiceTests
     private static CurrentUser CreateUser(UserId? userId = null, bool isAdmin = false)
     {
         IReadOnlyList<string> roles = isAdmin
-            ? [WellKnownRoles.Admin, WellKnownRoles.User]
-            : [WellKnownRoles.User];
+            ? [Roles.Admin, Roles.User]
+            : [Roles.User];
 
         return new CurrentUser
         {

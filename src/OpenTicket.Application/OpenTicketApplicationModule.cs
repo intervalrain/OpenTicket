@@ -7,6 +7,7 @@ using OpenTicket.Application.Contracts.RateLimiting;
 using OpenTicket.Application.RateLimiting;
 using OpenTicket.Application.Tickets.Settings;
 using OpenTicket.Ddd.Application.Cqrs;
+using OpenTicket.Ddd.Application.Cqrs.Authorization;
 
 namespace OpenTicket.Application;
 
@@ -32,6 +33,7 @@ public static class OpenTicketApplicationModule
 
         // Register authorization and rate limiting services
         services.AddScoped<IAuthorizationService, AuthorizationService>();
+        services.AddScoped<IRequestAuthorizationService, RequestAuthorizationService>();
         services.AddScoped<IRateLimitService, RateLimitService>();
 
         return services;

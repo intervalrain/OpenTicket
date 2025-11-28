@@ -50,6 +50,11 @@ public static class OpenTicketApiModule
         }
 
         app.UseHttpsRedirection();
+
+        // Enable authentication and authorization middleware
+        app.UseAuthentication();
+        app.UseAuthorization();
+
         app.MapControllers();
 
         return app;
